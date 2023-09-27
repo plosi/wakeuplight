@@ -1,0 +1,9 @@
+# backups and saved versions
+/_orig
+/_old
+/_bkp
+
+# secrets and config files
+secrets.*
+secret.*
+*.dat

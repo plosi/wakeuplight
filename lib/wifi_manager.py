@@ -12,8 +12,9 @@ import time
 
 class WifiManager:
 
-    def __init__(self, ssid = 'WifiManager', password = 'wifimanager', reboot = True, debug = False):
+    def __init__(self, ssid = 'WifiManager', password = 'wifimanager', hostname='wifimanager', reboot = True, debug = False):
         self.wlan_sta = network.WLAN(network.STA_IF)
+        self.hostname = hostname
         self.wlan_sta.active(True)
         self.wlan_ap = network.WLAN(network.AP_IF)
         
@@ -100,6 +101,7 @@ class WifiManager:
         self.wlan_sta.connect(ssid, password)
         for _ in range(100):
             if self.wlan_sta.isconnected():
+                self.wlan_sta.config(hostname=self.hostname)
                 print('\nConnected! Network information:', self.wlan_sta.ifconfig())
                 return True
             else:
@@ -112,7 +114,7 @@ class WifiManager:
     
     def web_server(self):
         self.wlan_ap.active(True)
-        self.wlan_ap.config(essid = self.ap_ssid, password = self.ap_password, authmode = self.ap_authmode)
+        self.wlan_ap.config(essid = self.ap_ssid, password = self.ap_password, authmode = self.ap_authmode, hostname=self.hostname)
         server_socket = socket.socket()
         server_socket.close()
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
