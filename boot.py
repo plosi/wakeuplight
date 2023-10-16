@@ -4,9 +4,15 @@
 #import webrepl
 #webrepl.start()
 
-from wifi import do_connect
+from wifi import do_connect, do_disconnect
+
+start = False
 
 try:
-    is_wifi_connected = do_connect()
+    is_wifi_connected = do_connect(webrepl_run=False)
+    print('Wifi configuration saved, disconnecting now...')
+    start = True
+    do_disconnect()
 except:
     print('Error: no wifi connectivity')
+    

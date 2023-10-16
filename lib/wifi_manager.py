@@ -8,6 +8,7 @@ import network
 import socket
 import re
 import time
+import ujson
 
 
 class WifiManager:
@@ -54,6 +55,13 @@ class WifiManager:
             if ssid in profiles:
                 password = profiles[ssid]
                 if self.wifi_connect(ssid, password):
+                    res = {'ssid': ssid, 'wifi_pw': password}
+                    try:
+                        with open('wifi_config.json', 'w') as f:
+                            ujson.dump(res, f)
+                        print('Wifi config file saved')
+                    except OSError as e:
+                        print(f'Error: {e}')
                     return
         print('Could not connect to any WiFi network. Starting the configuration portal...')
         self.web_server()

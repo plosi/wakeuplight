@@ -5,8 +5,10 @@ AP_SSID = 'Wake Up Light'
 AP_PWD = 'wakeuplight'
 HOSTNAME = 'wakeuplight'
 
+wm = WifiManager(ssid=AP_SSID, password=AP_PWD, reboot=True, debug=False, hostname=HOSTNAME)
+
 def do_connect(webrepl_run=False):
-    wm = WifiManager(ssid=AP_SSID, password=AP_PWD, reboot=True, debug=False, hostname=HOSTNAME)
+#     wm = WifiManager(ssid=AP_SSID, password=AP_PWD, reboot=True, debug=False, hostname=HOSTNAME)
     wm.disconnect()
     utime.sleep_ms(250)
     wm.connect()
@@ -22,3 +24,6 @@ def do_connect(webrepl_run=False):
             print('\nDisconnected!')
         utime.sleep(5)
     return False
+
+def do_disconnect():
+    wm.disconnect()

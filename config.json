@@ -1,0 +1,8 @@
+{
+    "sunrise_delay": 1200,
+    "utc_offset": 3600,
+    "dst_offset": 0,
+    "alarm_hour": 7,
+    "alarm_minute": 1,
+    "alarm_on": 1
+}

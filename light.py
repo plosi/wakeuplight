@@ -7,6 +7,7 @@ import neopixel
 import utime
 import uasyncio
 
+
 class NeoPixelLight:
     
     presets = {
@@ -26,11 +27,11 @@ class NeoPixelLight:
         self.heartbeat_on = True
         self.current_color = (0,0,0,0)
         self.brightness = 1.0 # 0 to 1 i.e. 0 to 255
+        self.light_on = False # by default at startup the light is off
         
         self.sunrise_seconds = 300 # default 5 minutes i.e. 300 seconds
         self.sunset_seconds = 300 # default 5 minutes i.e. 300 seconds
-        self.light_on = False # by default at startup the light is off
-        
+    
         # make sure all pixels are off at startup
         self.change_color((0,0,0,0))
 
@@ -52,7 +53,7 @@ class NeoPixelLight:
         b = int(b * brightness)
         w = int(w * brightness)
         
-        self.change_color((r,g,b,w))
+#         self.change_color((r,g,b,w))
     
     def toggle(self):
         '''
@@ -71,7 +72,7 @@ class NeoPixelLight:
             self.np[led] = color
         self.np.write()
         
-        # reset light on flag and update current color
+        # reset light_n flag and update current color
         self.light_on = False
         self.current_color = color   
     
@@ -87,7 +88,7 @@ class NeoPixelLight:
             self.np[led] = color
         self.np.write()
         
-        # reset light on flag and update current color
+        # reset light_on flag and update current color
         self.light_on = True
         self.current_color = color
 
@@ -102,6 +103,8 @@ class NeoPixelLight:
         self.current_color = color
         if self.current_color != (0,0,0,0):
             self.light_on = True
+        elif self.current_color == (0,0,0,0):
+            self.light_on = False
 
     async def fade_in(self, leds: list, color: tuple, delay: float, steps=500, start_color=(0,0,0,0)):
         '''
@@ -118,16 +121,22 @@ class NeoPixelLight:
         b_step = (eb - sb) / steps
         w_step = (ew - sw) / steps
         
+        print(f'Fade-in delay: {delay} seconds')
         for step in range(steps + 1):
             for led in leds:
                 self.np[led] = (int(sr + step * r_step), int(sg + step * g_step), int(sb + step * b_step), int(sw + step * w_step))
             self.np.write()
-            await uasyncio.sleep(delay/1000)
+            self.current_color = (int(sr + step * r_step), int(sg + step * g_step), int(sb + step * b_step), int(sw + step * w_step))
+            await uasyncio.sleep(delay/steps)
         end = utime.time()
         print(f'End fade into color {color} - elapsed time {end-start} seconds')
         self.current_color = color
+        if self.current_color != (0,0,0,0):
+            self.light_on = True
+        elif self.current_color == (0,0,0,0):
+            self.light_on = False
     
-    async def heartbeat(self, leds: list, color: tuple, delay=1, brightness=.3):
+    async def heartbeat(self, leds: list, color: tuple, delay=.5, brightness=.3):
         # brightness is a number between 0 and 1
         delay = delay * 0.33 * 0.5
         r,g,b,w = color
@@ -135,18 +144,18 @@ class NeoPixelLight:
         g = int(g * brightness)
         b = int(b * brightness)
         w = int(w * brightness)
-        uasyncio.run(self.fade_in(leds=leds, start_color=(0,0,0,0), color=(r,g,b,w), delay=.3))
-        uasyncio.run(self.fade_in(leds=leds, start_color=(r,g,b,w), color=(0,0,0,0), delay=.3))
+        uasyncio.run(self.fade_in(leds=leds, start_color=(0,0,0,0), color=(r,g,b,w), delay=delay))
+        uasyncio.run(self.fade_in(leds=leds, start_color=(r,g,b,w), color=(0,0,0,0), delay=delay))
 
-    async def start_heartbeat(self, brightness=.3, delay=60):
+    async def start_heartbeat(self, brightness=.2, delay=60):
         while self.heartbeat_on is True:
             uasyncio.create_task(self.heartbeat(leds=[0], color=NeoPixelLight.presets['red'], brightness=brightness))
             await uasyncio.sleep(delay)
 
     async def ambient(self, delay: float, sunset=False):
         leds = [led for led in range(self.led0, self.np.n)]
-        color = (12,12,12,0) if not sunset else (0,0,0,0)
-        start_color = (0,0,0,0) if not sunset else (12,12,12,0)
+        color = (36,24,4,0) if not sunset else (0,0,0,0)
+        start_color = (0,0,0,0) if not sunset else (36,24,4,0)
         uasyncio.run(self.fade_in(leds=leds, color=color, delay=delay, start_color=start_color))
     
     async def golden_hour(self, delay: float, sunset=False):
@@ -157,11 +166,11 @@ class NeoPixelLight:
     
     async def full_sun(self, delay: float, sunset=False):
         leds = [led for led in range(self.led0, self.np.n)]
-        color = (255,255,255,255) if not sunset else (255,64,0,0)
-        start_color = (255,64,0,0) if not sunset else (255,255,255,255)
+        color = (255,153,51,0) if not sunset else (255,64,0,0)
+        start_color = (255,64,0,0) if not sunset else (255,153,51,0)
         uasyncio.run(self.fade_in(leds=leds, color=color, delay=delay, start_color=start_color))
     
-    async def sunrise(self, delay: float):#self.sunrise_seconds):
+    async def sunrise(self, delay: float):
         ambient_delay = int(delay * .1)
         golden_hour_delay = int(delay * .8)
         full_sun_delay = int(delay * .2)
@@ -169,7 +178,7 @@ class NeoPixelLight:
         await self.golden_hour(golden_hour_delay)
         await self.full_sun(full_sun_delay)
     
-    async def sunset(self, delay: float):#self.sunset_seconds):
+    async def sunset(self, delay: float):
         ambient_delay = int(delay * .1)
         golden_hour_delay = int(delay * .8)
         full_sun_delay = int(delay * .2)

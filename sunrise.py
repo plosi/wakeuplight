@@ -7,21 +7,32 @@ import uasyncio
 import ntptime
 import urequests
 from machine import RTC
+import ujson
 
 class NeoPixelAlarm:
     
-#     current_task = None
-    
-    def __init__(self, neopixel_obj, utc_offset=3600, dst_offset=0, alarm_hour=6, alarm_minute=15, alarm_delay=1200.):
+    def __init__(self, neopixel_obj):
         self.neo = neopixel_obj
         
-        self.utc_offset = utc_offset
-        self.dst_offset = dst_offset
+        try:
+            with open('config.json', 'r') as f:
+                c = ujson.load(f)
+                self.utc_offset = c['utc_offset']
+                self.dst_offset = c['dst_offset']
+                self.alarm_hour = c['alarm_hour']
+                self.alarm_minute = c['alarm_minute']
+                self.alarm_delay = c['sunrise_delay']
+                self.alarm_on = True if c['alarm_on'] == 1 else False
+                
+        except OSError as e:
+            print(f'Error alarm configs: {e}')
+            self.utc_offset = 3600
+            self.dst_offset = 0  
+            self.alarm_hour = 6
+            self.alarm_minute = 15
+            self.alarm_delay = 1200.0
+            self.alarm_on = True
         
-        self.alarm_hour = alarm_hour
-        self.alarm_minute = alarm_minute
-        self.alarm_delay = alarm_delay
-        self.alarm_on = True
         self.alarm_running = False
 
     def update_time(self):
@@ -51,7 +62,7 @@ class NeoPixelAlarm:
 
     async def call_update_time(self, delay=300):
         '''
-        Async function to call update_time
+        Async function to call update_time every 'delay' seconds
         '''
         while True:
             self.update_time()
@@ -69,7 +80,6 @@ class NeoPixelAlarm:
                 if (now_hr == self.alarm_hour) & (now_mn == self.alarm_minute) & (self.alarm_running is not True):
                     self.alarm_running = True
                     uasyncio.create_task(self.neo.sunrise(delay=self.alarm_delay))
-#                     NeoPixelAlarm.current_task = uasyncio.create_task(self.neo.sunrise(delay=self.alarm_delay))
                 # reset the alarm_run flag once the alarm is terminated
                 elif self.alarm_running:
                     if (now_hr >= self.alarm_hour) & (now_mn > (self.alarm_minute + self.alarm_delay / 60)):
